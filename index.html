@@ -7,18 +7,70 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <main class="game-shell">
+        <h1>🎮 霓虹打磚塊：破關挑戰</h1>
 
-    <h1>🎮 霓虹打磚塊：破關挑戰</h1>
-    <div class="info-bar">
-        <span>關卡：<span id="level">1</span> / 3</span>
-        <span>分數：<span id="score">0</span></span>
-        <span>生命：<span id="lives">3</span></span>
-    </div>
-    <canvas id="gameCanvas" width="480" height="380"></canvas>
-    <p class="controls-hint">
-        操作：滑鼠移動 或 方向鍵「← / →」｜道具：[寬] 擋板加長、[命] 生命+1、[火] 穿透火球
-    </p>
-    <button id="actionBtn" onclick="handleBtnClick()">下一關</button>
+        <section id="setupPanel" class="setup-panel" aria-label="遊戲設定">
+            <h2>遊戲設定</h2>
+            <div class="settings-grid">
+                <label>
+                    關卡
+                    <select id="levelSelect">
+                        <option value="0">第 1 關：標準排列</option>
+                        <option value="1">第 2 關：裝甲夾擊</option>
+                        <option value="2">第 3 關：魔王城牆</option>
+                    </select>
+                </label>
+                <label>
+                    難度
+                    <select id="difficultySelect">
+                        <option value="easy">簡單</option>
+                        <option value="normal" selected>普通</option>
+                        <option value="hard">困難</option>
+                    </select>
+                </label>
+                <label>
+                    速度
+                    <select id="speedSelect">
+                        <option value="slow">慢速</option>
+                        <option value="normal" selected>正常</option>
+                        <option value="fast">快速</option>
+                    </select>
+                </label>
+                <label>
+                    球的造型
+                    <select id="ballSelect">
+                        <option value="circle">圓形</option>
+                        <option value="square">方形</option>
+                        <option value="diamond">鑽石</option>
+                    </select>
+                </label>
+                <label>
+                    擋板造型
+                    <select id="paddleSelect">
+                        <option value="rounded">圓角長條</option>
+                        <option value="capsule">膠囊型</option>
+                        <option value="arrow">箭頭型</option>
+                    </select>
+                </label>
+            </div>
+            <button id="startBtn" class="start-btn" type="button">開始遊戲</button>
+        </section>
+
+        <section id="gameArea" class="game-area" hidden>
+            <div class="info-bar">
+                <span>關卡：<span id="level">1</span> / 3</span>
+                <span>分數：<span id="score">0</span></span>
+                <span>生命：<span id="lives">3</span></span>
+            </div>
+            <canvas id="gameCanvas" width="480" height="380"></canvas>
+            <p class="controls-hint">
+                操作：滑鼠移動 或 方向鍵「← / →」｜道具：[寬] 擋板加長、[命] 生命+1、[火] 穿透火球
+            </p>
+            <button id="actionBtn" type="button">下一關</button>
+            <button id="backBtn" type="button" class="back-btn">回到設定</button>
+        </section>
+    </main>
     <script src="script.js" defer></script>
 </body>
 </html>

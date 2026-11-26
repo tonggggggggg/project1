@@ -4,6 +4,15 @@ const levelEl = document.getElementById("level");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 const actionBtn = document.getElementById("actionBtn");
+const startBtn = document.getElementById("startBtn");
+const backBtn = document.getElementById("backBtn");
+const setupPanel = document.getElementById("setupPanel");
+const gameArea = document.getElementById("gameArea");
+const levelSelect = document.getElementById("levelSelect");
+const difficultySelect = document.getElementById("difficultySelect");
+const speedSelect = document.getElementById("speedSelect");
+const ballSelect = document.getElementById("ballSelect");
+const paddleSelect = document.getElementById("paddleSelect");
 
 // 3 個關卡的地圖設計 (0=空, 1=普通磚, 2=裝甲磚需打2下)
 const LEVELS = [
@@ -43,6 +52,11 @@ let score = 0;
 let lives = 3;
 let gameState = "PLAYING"; // PLAYING, LEVEL_CLEAR, GAME_OVER, ALL_CLEAR
 let animationId;
+let selectedDifficulty = "normal";
+let selectedSpeed = "normal";
+let selectedBallShape = "circle";
+let selectedPaddleShape = "rounded";
+let powerUpChance = 0.3;
 
 // 球與擋板狀態
 let ballRadius = 8;
@@ -69,11 +83,14 @@ function loadLevel(lvlIndex) {
         bricks[r] = [];
         for (let c = 0; c < brickColumnCount; c++) {
             const hp = map[r][c];
+            let adjustedHp = hp;
+            if (selectedDifficulty === "easy" && hp === 2) adjustedHp = 1;
+            if (selectedDifficulty === "hard" && hp === 2) adjustedHp = 3;
             bricks[r][c] = {
                 x: c * (brickWidth + brickPadding) + brickOffsetLeft,
                 y: r * (brickHeight + brickPadding) + brickOffsetTop,
-                hp: hp,
-                maxHp: hp,
+                hp: adjustedHp,
+                maxHp: adjustedHp,
                 color: rowColors[r % rowColors.length]
             };
         }
@@ -82,7 +99,8 @@ function loadLevel(lvlIndex) {
 }
 
 function resetBallAndPaddle() {
-    const speed = 3.2 + currentLevel * 0.5; // 關卡越高球越快
+    const speedMultiplier = { slow: 0.75, normal: 1, fast: 1.35 }[selectedSpeed];
+    const speed = (3.2 + currentLevel * 0.5) * speedMultiplier;
     x = canvas.width / 2;
     y = canvas.height - 35;
     dx = speed * (Math.random() > 0.5 ? 1 : -1);
@@ -95,12 +113,25 @@ function resetBallAndPaddle() {
 }
 
 function startNewGame() {
-    currentLevel = 0;
+    currentLevel = Number(levelSelect.value);
+    selectedDifficulty = difficultySelect.value;
+    selectedSpeed = speedSelect.value;
+    selectedBallShape = ballSelect.value;
+    selectedPaddleShape = paddleSelect.value;
+
+    const difficultySettings = {
+        easy: { lives: 5, powerChance: 0.45 },
+        normal: { lives: 3, powerChance: 0.3 },
+        hard: { lives: 2, powerChance: 0.2 }
+    };
+    lives = difficultySettings[selectedDifficulty].lives;
+    powerUpChance = difficultySettings[selectedDifficulty].powerChance;
     score = 0;
-    lives = 3;
     updateHUD();
     actionBtn.style.display = "none";
     gameState = "PLAYING";
+    setupPanel.hidden = true;
+    gameArea.hidden = false;
     loadLevel(currentLevel);
     cancelAnimationFrame(animationId);
     draw();
@@ -144,7 +175,7 @@ canvas.addEventListener("mousemove", (e) => {
 
 // 隨機生成掉落道具 (30% 機率)
 function spawnPowerUp(bx, by) {
-    if (Math.random() > 0.3) return;
+    if (Math.random() > powerUpChance) return;
     const types = [
         { type: "WIDE", label: "寬", color: "#38bdf8" },
         { type: "LIFE", label: "命", color: "#4ade80" },
@@ -245,9 +276,9 @@ function drawBricks() {
                 ctx.beginPath();
                 ctx.roundRect(b.x, b.y, brickWidth, brickHeight, 4);
                 // 裝甲磚未受損時顯示金屬銀白色，被打一下後恢復原色
-                ctx.fillStyle = (b.hp === 2) ? "#e2e8f0" : b.color;
+                ctx.fillStyle = (b.hp > 1) ? "#e2e8f0" : b.color;
                 ctx.fill();
-                if (b.hp === 2) {
+                if (b.hp > 1) {
                     ctx.strokeStyle = "#38bdf8";
                     ctx.lineWidth = 2;
                     ctx.stroke();
@@ -271,18 +302,39 @@ function draw() {
     updatePowerUps();
 
     // 畫球 (火球模式變橘紅色)
-    ctx.beginPath();
-    ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
     ctx.fillStyle = isFireball ? "#f97316" : "#ffffff";
+    ctx.beginPath();
+    if (selectedBallShape === "square") {
+        ctx.rect(x - ballRadius, y - ballRadius, ballRadius * 2, ballRadius * 2);
+    } else if (selectedBallShape === "diamond") {
+        ctx.moveTo(x, y - ballRadius);
+        ctx.lineTo(x + ballRadius, y);
+        ctx.lineTo(x, y + ballRadius);
+        ctx.lineTo(x - ballRadius, y);
+        ctx.closePath();
+    } else {
+        ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+    }
     ctx.fill();
     ctx.closePath();
 
     // 畫擋板
-    ctx.beginPath();
-    ctx.roundRect(paddleX, canvas.height - paddleHeight - 6, paddleWidth, paddleHeight, 6);
     ctx.fillStyle = wideTimer > 0 ? "#4ade80" : "#38bdf8";
+    ctx.beginPath();
+    if (selectedPaddleShape === "capsule") {
+        ctx.roundRect(paddleX, canvas.height - paddleHeight - 6, paddleWidth, paddleHeight, paddleHeight / 2);
+    } else if (selectedPaddleShape === "arrow") {
+        const yPos = canvas.height - paddleHeight - 6;
+        ctx.moveTo(paddleX, yPos);
+        ctx.lineTo(paddleX + paddleWidth - 12, yPos);
+        ctx.lineTo(paddleX + paddleWidth, yPos + paddleHeight / 2);
+        ctx.lineTo(paddleX + paddleWidth - 12, yPos + paddleHeight);
+        ctx.lineTo(paddleX, yPos + paddleHeight);
+        ctx.closePath();
+    } else {
+        ctx.roundRect(paddleX, canvas.height - paddleHeight - 6, paddleWidth, paddleHeight, 6);
+    }
     ctx.fill();
-    ctx.closePath();
 
     collisionDetection();
     if (gameState !== "PLAYING") return;
@@ -317,4 +369,11 @@ function draw() {
     animationId = requestAnimationFrame(draw);
 }
 
-startNewGame();
+startBtn.addEventListener("click", startNewGame);
+actionBtn.addEventListener("click", handleBtnClick);
+backBtn.addEventListener("click", () => {
+    cancelAnimationFrame(animationId);
+    gameState = "PLAYING";
+    gameArea.hidden = true;
+    setupPanel.hidden = false;
+});
